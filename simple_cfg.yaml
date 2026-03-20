@@ -1,0 +1,16 @@
+runner:
+  num_steps_per_env: 24
+  num_envs: 1024
+  num_actions: 12
+  num_observations: 45
+  num_privileged_obs: 48
+  obs_groups: {"actor": ["policy"], "critic": ["policy", "privileged"]}
+  save_interval: 100
+  algorithm:
+    class_name: PPO
+  actor:
+    class_name: MLPModel
+    distribution_cfg:
+      class_name: GaussianDistribution
+  critic:
+    class_name: MLPModel
