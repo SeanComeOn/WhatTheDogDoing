@@ -1,2 +1,4 @@
 go2/assets
 *.png
+logs/
+__pycache__

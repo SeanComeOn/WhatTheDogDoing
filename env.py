@@ -16,7 +16,7 @@ class WhatTheDogDoingEnv(VecEnv):
         self.cfg = config
 
         # load from go2/scene.xml
-        mjm = mujoco.MjModel.from_xml_path("../go2/scene.xml")
+        mjm = mujoco.MjModel.from_xml_path("go2/scene_plane.xml")
         self.m = mjw.put_model(mjm)
         self.d = mjw.make_data(mjm, nworld=num_envs)
         

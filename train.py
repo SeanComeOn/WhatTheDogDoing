@@ -38,13 +38,13 @@ if __name__ == "__main__":
     # ============================================================
     # 【新增】加载预训练权重 (Resume / Fine-tuning)
     # ============================================================
-    resume_path = "../../7.code_refactor/logs/exp_2026-03-19_20-33-29/model_1100.pt"
+    # resume_path = "../../7.code_refactor/logs/exp_2026-03-19_20-33-29/model_1100.pt"
     
-    if os.path.exists(resume_path):
-        print(f"\n[*] 成功找到并加载预训练权重: {resume_path}")
-        runner.load(resume_path)
-    else:
-        raise FileNotFoundError(f"找不到权重: {resume_path}")
+    # if os.path.exists(resume_path):
+    #     print(f"\n[*] 成功找到并加载预训练权重: {resume_path}")
+    #     runner.load(resume_path)
+    # else:
+    #     raise FileNotFoundError(f"找不到权重: {resume_path}")
 
     # 5) Start training
     runner.learn(num_learning_iterations=1500) # Specify the number of desired iterations
