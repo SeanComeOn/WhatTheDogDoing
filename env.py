@@ -64,6 +64,17 @@ class WhatTheDogDoingEnv(VecEnv):
         self.commands = torch.zeros(self.num_envs, 3, device=self.device)  # [v_x, v_y, yaw]
         self.actions = torch.zeros(self.num_envs, self.num_actions, device=self.device)
         
+        # ============================================================
+        # 历史观测缓冲区 (Frame Stacking)
+        # ============================================================
+        self.history_length = 5
+        self.single_obs_dim = 45
+        # 初始化形状为 [1024, 5, 45] 的全零张量
+        self.obs_history_buf = torch.zeros(
+            self.num_envs, self.history_length, self.single_obs_dim, 
+            dtype=torch.float, device=self.device
+        )
+        
         # 用于缓存的中间变量
         self.base_quat = None
         self.base_lin_vel = None
@@ -124,16 +135,24 @@ class WhatTheDogDoingEnv(VecEnv):
         obs_commands = self.commands * self.obs_scales["lin_vel"]  # 目标指令
         obs_actions = self.actions  # 上一步动作
 
-        # ================= 4. 打包 Policy 观测 (绝对无特权) =================
+        # ================= 4. 打包当前单步 Policy 观测 =================
         # 维度合计: 3(角速度) + 3(重力) + 3(指令) + 12(角度) + 12(转速) + 12(动作) = 45 维
-        obs_policy = torch.cat((
+        current_obs_policy = torch.cat((
             obs_ang_vel,
             obs_proj_gravity,
             obs_commands,
             obs_dof_pos,
             obs_dof_vel,
             obs_actions
-        ), dim=-1)
+        ), dim=-1)  # 形状: [num_envs, 45]
+
+        # ================= 【核心修改】更新历史缓冲区 =================
+        # 利用 torch.roll 将历史数据往前挪一格（丢弃最老的一帧），并将最新帧放入末尾
+        self.obs_history_buf = torch.roll(self.obs_history_buf, shifts=-1, dims=1)
+        self.obs_history_buf[:, -1, :] = current_obs_policy
+
+        # 展平历史缓冲区 -> 形状: [num_envs, 225]
+        obs_policy_flat = self.obs_history_buf.view(self.num_envs, -1)
 
         # ================= 5. 获取特权信息 (上帝视角) =================
         # 真实局部线速度 (只有 Critic 能看)
@@ -141,16 +160,12 @@ class WhatTheDogDoingEnv(VecEnv):
         self.base_lin_vel = quat_rotate_inverse(self.base_quat, global_lin_vel)
         obs_lin_vel = self.base_lin_vel * self.obs_scales["lin_vel"]
         
-        # ================= 6. 打包 Privileged 观测 =================
-        # 维度合计: 3(真实线速度) + 45(Policy所有信息) = 48 维
-        obs_privileged = torch.cat((
-            obs_lin_vel,
-            obs_policy
-        ), dim=-1)
+        # 【修改】：不再手动拼接 policy，直接返回纯净的特权信息
+        obs_privileged = obs_lin_vel  # 形状: [num_envs, 3]
 
-        # ================= 7. 返回给 RSL-RL =================
+        # ================= 6. 返回给 RSL-RL =================
         return TensorDict({
-            "policy": obs_policy,
+            "policy": obs_policy_flat,
             "privileged": obs_privileged
         })
 
@@ -357,6 +372,9 @@ class WhatTheDogDoingEnv(VecEnv):
         self.actions[env_ids] = 0.0
         if hasattr(self, '_prev_actions'):
             self._prev_actions[env_ids] = 0.0
+        
+        # 【新增】：彻底清空这些死亡狗子的历史观测
+        self.obs_history_buf[env_ids] = 0.0
             
         # 【可选修复】：如果你的 MuJoCo/Warp 版本允许，清空加速度缓存以消除“幽灵力”
         if hasattr(self.d, 'qacc'):

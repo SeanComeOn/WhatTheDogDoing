@@ -2,8 +2,8 @@ runner:
   num_steps_per_env: 24
   num_envs: 1024
   num_actions: 12
-  num_observations: 45
-  num_privileged_obs: 48
+  num_observations: 225
+  num_privileged_obs: 3
   obs_groups: {"actor": ["policy"], "critic": ["policy", "privileged"]}
   save_interval: 100
   algorithm:
