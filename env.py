@@ -67,13 +67,20 @@ class WhatTheDogDoingEnv(VecEnv):
         # ============================================================
         # 历史观测缓冲区 (Frame Stacking)
         # ============================================================
-        self.history_length = 5
-        self.single_obs_dim = 45
-        # 初始化形状为 [1024, 5, 45] 的全零张量
+        # 从配置动态读取，而非硬编码
+        self.history_length = self.cfg.get("history_length", 5)
+        self.single_obs_dim = self.cfg.get("single_obs_dim", 45)
+        
+        # 初始化缓冲区 [batch_size, history_length, single_obs_dim]
         self.obs_history_buf = torch.zeros(
             self.num_envs, self.history_length, self.single_obs_dim, 
             dtype=torch.float, device=self.device
         )
+        
+        print(f"[*] 环境观测配置:")
+        print(f"    - 历史帧数: {self.history_length}")
+        print(f"    - 单帧维度: {self.single_obs_dim}")
+        print(f"    - 总观测维度: {self.history_length * self.single_obs_dim}")
         
         # 用于缓存的中间变量
         self.base_quat = None

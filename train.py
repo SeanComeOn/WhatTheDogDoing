@@ -22,6 +22,21 @@ if __name__ == "__main__":
         full_cfg = yaml.safe_load(f)
     train_cfg = full_cfg["runner"]
 
+    # ============================================================
+    # 【核心修改】动态计算元配置
+    # ============================================================
+    history_length = train_cfg.get("history_length", 1)
+    single_obs_dim = train_cfg.get("single_obs_dim", 45)
+    
+    # 动态注入 RSL-RL 必须读取的 num_observations
+    train_cfg["num_observations"] = history_length * single_obs_dim
+    
+    print(f"\n[*] 元配置计算完毕:")
+    print(f"    - 单帧维度: {single_obs_dim}")
+    print(f"    - 历史帧数: {history_length}")
+    print(f"    => 注入 Actor 网络输入维度 (num_observations): {train_cfg['num_observations']}")
+    # ============================================================
+
     # 3) Generate unique log directory based on date-time
     log_dir = get_unique_log_dir(base_dir="logs", prefix="exp")
     print(f"\n=== 实验日志文件夹: {log_dir} ===")

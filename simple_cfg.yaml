@@ -2,8 +2,13 @@ runner:
   num_steps_per_env: 24
   num_envs: 1024
   num_actions: 12
-  num_observations: 225
-  num_privileged_obs: 3
+  
+  # === 元配置 (Meta-config) ===
+  # 不再手写 num_observations，让 Python 动态计算
+  history_length: 10       # 要堆叠几帧历史
+  single_obs_dim: 45      # 单帧 policy 观测维度
+  num_privileged_obs: 3   # 特权观测维度 (不需要历史堆叠)
+  
   obs_groups: {"actor": ["policy"], "critic": ["policy", "privileged"]}
   save_interval: 100
   algorithm:
